@@ -39,8 +39,8 @@ function balanced_set(x,y,n,seed=0)
     y_ordered = zeros(Int,n*10)
     for k=1:10
         labels = [i for i in 1:length(y) if y[i]==k]
-        x_ordered[k*10-9:k*10,:] = x[labels,:][1:n,:]
-        y_ordered[k*10-9:k*10] = y[labels][1:n]
+        x_ordered[k*n-(n-1):k*n,:] = x[labels,:][1:n,:]
+        y_ordered[k*n-(n-1):k*n] = y[labels][1:n]
     end
     return x_ordered, y_ordered
 end
