@@ -34,6 +34,8 @@ function balanced_set(x,y,n,seed=0)
     end
     
     shuffled_indices = shuffle(1:length(y))
+    #x = x[shuffled_indices,:]
+    #y = y[shuffled_indices]
     
     x_ordered = zeros(Float64,n*10,784)
     y_ordered = zeros(Int,n*10)
