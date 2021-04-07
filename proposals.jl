@@ -71,11 +71,12 @@ end
     W2 = [trace[(:W,output)][j] for j=1:length(trace[(:W,output)])]
     σ₃ = 1/trace[(:τ,2)]
     output_weights = []
-    for j=1:new_k
+    for j=1:trace[(:k,2)]
         output_weight = normal(0,σ₃)
         push!(output_weights,output_weight)
-        W2 = insert!(W2,insert+((j-1)*(10)),output_weight)
+        W2 = insert!(W2,(insert-1)*(trace[(:k,2)])+j,output_weight)
     end
+    obs_new[(:W,2)] = W2
     
     #Hidden Layer Bias
     obs_new[(:b,output)] = trace[(:b,output)]
@@ -147,11 +148,12 @@ end
     W2 = [trace[(:W,output)][j] for j=1:length(trace[(:W,output)])]
     σ₃ = 1/trace[(:τ,2)]
     output_weights = []
-    for j=1:new_k
-        output_weight = W2[new_k*(delete-1)+1]
+    for j=1:trace[(:k,2)]
+        output_weight = W2[(delete-1)*(trace[(:k,2)])+1]
         push!(output_weights,output_weight)
-        W2 = deleteat!(W2,new_k*(delete-1)+1)
+        W2 = deleteat!(W2,(delete-1)*(trace[(:k,2)])+1)
     end
+    obs_new[(:W,2)] = W2
     
     #Hidden Layer Bias
     obs_new[(:b,output)] = trace[(:b,output)]
