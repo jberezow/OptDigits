@@ -27,7 +27,7 @@ function load_mnist_test_set()
     x, y
 end
 
-function balanced_set(x,y,n,seed=0)
+function balanced_set(x,y,n,c,seed=0)
     
     if seed != 0
         Random.seed!(seed)
@@ -37,9 +37,9 @@ function balanced_set(x,y,n,seed=0)
     #x = x[shuffled_indices,:]
     #y = y[shuffled_indices]
     
-    x_ordered = zeros(Float64,n*10,784)
-    y_ordered = zeros(Int,n*10)
-    for k=1:10
+    x_ordered = zeros(Float64,n*c,784)
+    y_ordered = zeros(Int,n*c)
+    for k=1:c
         labels = [i for i in 1:length(y) if y[i]==k]
         x_ordered[k*n-(n-1):k*n,:] = x[labels,:][1:n,:]
         y_ordered[k*n-(n-1):k*n] = y[labels][1:n]
