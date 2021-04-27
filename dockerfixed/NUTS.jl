@@ -42,7 +42,6 @@ function NUTS(trace, selection, δ, M, Madapt, verbose=true)
     # Ref: code start from Line 111 in https://github.com/mfouesneau/NUTS/blob/master/nuts.py
     # QUES: will this lead to some bias of the sampler?
     while isinf(L(θ′)) || any(isinf.(∇L(θ′)))
-      return ϵ       
       println("Inf warning")
       ϵ = ϵ * 0.5
       θ′, r′ = leapfrog(θ, r, ϵ)
@@ -62,7 +61,7 @@ function NUTS(trace, selection, δ, M, Madapt, verbose=true)
       # Base case - take one leapfrog step in the direction v.
       θ′, r′ = leapfrog(θ, r, v * ϵ)
       # NOTE: this trick prevents the log-joint or its graident from being infinte
-      if L(θ′) == -Inf || ∇L(θ′) == -Inf
+      while L(θ′) == -Inf || ∇L(θ′) == -Inf
         ϵ = ϵ * 0.5
         θ′, r′ = leapfrog(θ, r, v * ϵ)
         println("Inf warning")
@@ -96,9 +95,9 @@ function NUTS(trace, selection, δ, M, Madapt, verbose=true)
   θs = [zeros(length(θ0)) for i=1:M+1]
 
   θs[1] = θ0
-  ϵ = 0.01#find_reasonable_ϵ(θ0)
+  ϵ = find_reasonable_ϵ(θ0)
   μ, γ, t_0, κ = log(10 * ϵ), 0.05, 10, 0.75
-  ϵ̄, H̄ = 0.01,0.0#1.0, 0
+  ϵ̄, H̄ = 1, 0
 
   if verbose println("[NUTS] start sampling for $M samples with inital ϵ=$ϵ") end
 

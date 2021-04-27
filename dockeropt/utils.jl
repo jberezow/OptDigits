@@ -9,6 +9,16 @@ function layer_unpacker(i,l,k)
     return input_dim, output_dim
 end
 
+function reshape_x(x)
+    n = size(x)[1]
+    x_reshaped = zeros(Float64, 8, 8, n)
+    for i=1:n
+        test = reshape(x[i,:], (1,8,8))
+        x_reshaped[:,:,i] = reshape(x[i,:], (8,8))
+    end
+    return x_reshaped
+end
+
 function label_output(y)
     labels = [findmax(y[:,i])[2] for i=1:length(y[1,:])]
 end

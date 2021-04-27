@@ -36,12 +36,6 @@ end
     argdiffs = map((_) -> NoChange(), args)
     obs_new[(:k,1)] = new_k
     obs_new[(:k,2)] = trace[(:k,2)]
-    
-    #Update Hyperparameters
-    obs_new[(:τ,1)] = trace[(:τ,1)]
-    obs_new[(:τᵦ,1)] = trace[(:τᵦ,1)]
-    obs_new[(:τ,2)] = trace[(:τ,2)]
-    obs_new[(:τᵦ,2)] = trace[(:τᵦ,2)]
         
     #Get the input and output dimensions of the edit layer
     in_dim, out_dim = layer_unpacker(1,trace[:l],[obs_new[(:k,i)] for i=1:obs_new[:l]])
@@ -52,10 +46,10 @@ end
     #-------------------
     #Hidden Layer Weights
     W1 = [trace[(:W,1)][j] for j=1:length(trace[(:W,1)])]
-    σ₁ = 1/trace[(:τ,1)]
+    σ = 1.0
     hidden_weights = []
     for j=1:in_dim
-        hidden_weight = normal(0,σ₁)
+        hidden_weight = normal(0,σ)
         push!(hidden_weights,hidden_weight)
         W1 = insert!(W1,insert+((j-1)*(out_dim)),hidden_weight)
     end
@@ -63,16 +57,14 @@ end
     
     #Hidden Layer Bias
     b1 = [trace[(:b,1)][j] for j=1:length(trace[(:b,1)])]
-    σ₂ = 1/trace[(:τᵦ,1)]
-    new_bias = normal(0,σ₂)
+    new_bias = normal(0,σ)
     obs_new[(:b,1)] = insert!(b1, insert, new_bias)
 
     #Output Layer Weights
     W2 = [trace[(:W,output)][j] for j=1:length(trace[(:W,output)])]
-    σ₃ = 1/trace[(:τ,2)]
     output_weights = []
     for j=1:trace[(:k,2)]
-        output_weight = normal(0,σ₃)
+        output_weight = normal(0,σ)
         push!(output_weights,output_weight)
         W2 = insert!(W2,(insert-1)*(trace[(:k,2)])+j,output_weight)
     end
@@ -85,11 +77,11 @@ end
     #Determine q_score
     q_score = 0
     for i=1:length(hidden_weights)
-        q_score += log(pdf(Normal(0,σ₁),hidden_weights[i]))
+        q_score += log(pdf(Normal(0,σ),hidden_weights[i]))
     end
-    q_score += log(pdf(Normal(0,σ₂),new_bias))
+    q_score += log(pdf(Normal(0,σ),new_bias))
     for i=1:length(output_weights)
-        q_score += log(pdf(Normal(0,σ₃),output_weights[i]))
+        q_score += log(pdf(Normal(0,σ),output_weights[i]))
     end
         
     #Update Trace and Return Trace and Weights
@@ -114,12 +106,6 @@ end
     argdiffs = map((_) -> NoChange(), args)
     obs_new[(:k,1)] = new_k
     obs_new[(:k,2)] = trace[(:k,2)]
-    
-    #Update Hyperparameters
-    obs_new[(:τ,1)] = trace[(:τ,1)]
-    obs_new[(:τᵦ,1)] = trace[(:τᵦ,1)]
-    obs_new[(:τ,2)] = trace[(:τ,2)]
-    obs_new[(:τᵦ,2)] = trace[(:τᵦ,2)]
         
     #Get the input and output dimensions of the edit layer
     in_dim, out_dim = layer_unpacker(1,trace[:l],[obs_new[(:k,i)] for i=1:obs_new[:l]])
@@ -130,7 +116,7 @@ end
     #-------------------
     #Hidden Layer Weights
     W1 = [trace[(:W,1)][j] for j=1:length(trace[(:W,1)])]
-    σ₁ = 1/trace[(:τ,1)]
+    σ = 1.0
     hidden_weights = []
     for j=1:in_dim
         hidden_weight = W1[delete+((j-1)*(out_dim))]
@@ -141,13 +127,11 @@ end
     
     #Hidden Layer Bias
     b1 = [trace[(:b,1)][j] for j=1:length(trace[(:b,1)])]
-    σ₂ = 1/trace[(:τᵦ,1)]
     new_bias = b1[delete]
     obs_new[(:b,1)] = deleteat!(b1, delete)
 
     #Output Layer Weights
     W2 = [trace[(:W,output)][j] for j=1:length(trace[(:W,output)])]
-    σ₃ = 1/trace[(:τ,2)]
     output_weights = []
     for j=1:trace[(:k,2)]
         output_weight = W2[(delete-1)*(trace[(:k,2)])+1]
@@ -163,11 +147,11 @@ end
     #Determine q_score
     q_score = 0
     for i=1:length(hidden_weights)
-        q_score += log(pdf(Normal(0,σ₁),hidden_weights[i]))
+        q_score += log(pdf(Normal(0,σ),hidden_weights[i]))
     end
-    q_score += log(pdf(Normal(0,σ₂),new_bias))
+    q_score += log(pdf(Normal(0,σ),new_bias))
     for i=1:length(output_weights)
-        q_score += log(pdf(Normal(0,σ₃),output_weights[i]))
+        q_score += log(pdf(Normal(0,σ),output_weights[i]))
     end
         
     #Update Trace and Return Trace and Weights
