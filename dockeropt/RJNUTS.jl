@@ -5,69 +5,6 @@ function load_layer(l)
     return layer_selection
 end
 
-@gen function gibbs_hyperparameters(trace)
-    obs_new = choicemap()::ChoiceMap
-    args = get_args(trace)
-    argdiffs = map((_) -> NoChange(), args)
-    
-    for i=1:trace[:l] + 1
-        #Biases
-        bias = trace[(:b,i)]
-        
-        n = length(bias)
-        α = α₁ + (n/2)
-        
-        Σ = sum(bias.^2)/2 
-        β = 1/(1/β₁ + Σ)
-        
-        τᵦ ~ gamma(α,β)
-        
-        #Weights
-        i == 1 ? α₀ = α₁ : α₀ = α₂
-        i == 1 ? β₀ = β₁ : β₀ = β₂
-        
-        weight = trace[(:W,i)]
-        
-        n = length(weight)
-        α = α₀ + (n/2)
-        
-        Σ = sum(weight.^2)/2
-        β = 1/(1/β₀ + Σ)
-        
-        τ ~ gamma(α,β)
-        
-        obs_new[(:τ,i)] = τ
-        obs_new[(:τᵦ,i)] = τᵦ
-    end
-    
-    (new_trace,_,_,_) = update(trace, args, argdiffs, obs_new)
-    
-    return new_trace
-end
-
-@gen function gibbs_noise(trace)
-    
-    obs_new = choicemap()::ChoiceMap
-    args = get_args(trace)
-    argdiffs = map((_) -> NoChange(), args)
-    
-    n = length(trace[:y])
-    α = αᵧ + (n/2)
-    
-    x = get_args(trace)[1]
-    y_pred = transpose(G(x,trace))[:,1]
-    y_real = trace[:y]
-    Σᵧ = sum((y_pred .- y_real).^2)/2
-    β = 1/(1/βᵧ + Σᵧ)
-    
-    τ ~ gamma(α,β)
-    obs_new[:τᵧ] = τ
-    
-    (new_trace,_,_,_) = update(trace, args, argdiffs, obs_new)
-    
-    return new_trace
-end
-
 function nuts_parameters(trace)
     
     l = trace[:l]
@@ -78,18 +15,19 @@ function nuts_parameters(trace)
     end
     
     prev_score = get_score(trace)
-    
-    acc = 0
 
-    new_trace = NUTS(trace, param_selection, acc_prob, m, m2, false)[m+1]
+    new_trace = NUTS(trace, param_selection, acc_prob, m, m, false)[m+1]
     new_score = get_score(new_trace)
-    if prev_score != new_score
-        return (new_trace, 1)
-    else
-        return (trace, 0)
-    end
+    nuts_score = new_score - prev_score
     
-    return (trace, acc)
+    if exp(nuts_score) == 1
+        accepted = 0
+        return (trace, accepted)
+    else
+        accepted = 1
+        return (new_trace, accepted)
+    end
+
 end
 
 function layer_nuts(trace,mode="draw")
@@ -127,30 +65,25 @@ function layer_nuts(trace,mode="draw")
     
 end
 
-function layer_parameter(trace, chain)
+function node_parameter(trace)
     obs = obs_master
-    for i=1:trace[:l]+1
-        obs[(:τ,i)] = trace[(:τ,i)]
-        obs[(:τᵦ,i)] = trace[(:τᵦ,i)]
-    end
-    obs[:τᵧ] = trace[:τᵧ]
     
     init_trace = trace
     
     #################################################RJNUTS#################################################
     #NUTS Step 1
     trace_tilde = trace
-    for i=1:2
-        (trace_tilde,) = layer_nuts(trace_tilde,"for")
+    for i=1:1
+        (trace_tilde,) = nuts_parameters(trace_tilde)
     end
     
     #Reversible Jump Step
-    (trace_prime, q_weight) = layer_change(trace_tilde)
+    (trace_prime, q_weight) = node_change(trace_tilde)
     
     #NUTS Step 2
     trace_star = trace_prime
-    for i=1:2
-        (trace_star,) = layer_nuts(trace_star,"back")
+    for i=1:1
+        (trace_star,) = nuts_parameters(trace_star)
     end
     #################################################RJNUTS#################################################
         
@@ -158,7 +91,7 @@ function layer_parameter(trace, chain)
     across_score = model_score + q_weight
 
     if rand() < exp(across_score)
-        println("********** Accepted Chain $chain: $(trace_star[:l]) **********")
+        println("********** Accepted: $(trace_star[(:k,1)]) **********")
         return (trace_star, 1)
     else
         return (init_trace, 0)
@@ -172,11 +105,9 @@ function RJNUTS(trace, iters, chain)
     within_acceptance = []
     
     for i=1:iters
-        (trace, accepted) = layer_parameter(trace)
+        (trace, accepted) = node_parameter(trace)
         push!(across_acceptance, accepted)
-        trace  = gibbs_hyperparameters(trace)
-        trace  = gibbs_noise(trace)
-        (trace, accepted)  = layer_nuts(trace)
+        (trace, accepted) = nuts_parameters(trace)
         push!(within_acceptance, accepted)
         push!(scores,get_score(trace))
         push!(traces, trace)
@@ -195,20 +126,10 @@ end
 
 function RJNUTS_parallel(trace, chain, ci)
     
-    if rand(Uniform(0,1)) < 0.5
-        (trace, a_acc) = layer_parameter(trace, chain)
-    else
-        a_acc = NaN
-    end
-    trace  = gibbs_hyperparameters(trace)
-    trace  = gibbs_noise(trace)
-    if rand(Uniform(0,1)) < 0.5
-        (trace, w_acc)  = layer_nuts(trace)
-    else
-        (trace, w_acc) = nuts_parameters(trace)
-    end
-    current_l = trace[:l]
-    println("Chain $chain Iter $ci : $(get_score(trace)), Layer Count: $current_l")
+    (trace, a_acc) = node_parameter(trace)
+    (trace, w_acc) = nuts_parameters(trace)
+    current_k = trace[(:k,1)]
+    println("Chain $chain Iter $ci : $(get_score(trace)), Layer Count: $current_k")
 
     return trace, a_acc, w_acc
 end

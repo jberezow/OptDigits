@@ -1,25 +1,34 @@
-#------------------------
-#Load Boston Housing Data
-#------------------------
+#--------------------
+#Load OptDigits Data
+#--------------------
 
-Random.seed!(10) #Best so far: Seed 3 (see noise variance of 3.048)
-data = load("boston.jld")["boston"]
-data = data[shuffle(1:end), :]
+#Load entire dataset
+x_total = deserialize("optdigits_x.jld")
+y_total = deserialize("optdigits_y.jld")
 
-# Generating test/training sets:
-nrow, ncol = size(data)
-nrow_test  = div(nrow, 2)
-nrow_train = nrow - nrow_test
+#Standardize x Data
+dx = fit(ZScoreTransform, x_total, dims=2)
+StatsBase.transform!(dx, x_total)
 
-x = data[:,1:13]
-y = data[:,14]
+#Load the OptDigits Data
+num_samples = 10
+num_classes = 10
 
-dx = fit(ZScoreTransform, x, dims=1)
-StatsBase.transform!(dx, x)
-dy = fit(ZScoreTransform, y, dims=1)
-StatsBase.transform!(dy, y)
+x_train, y_train = balanced_set(x_total,y_total,num_samples,num_classes,1);#Random seed 1 for train data
+x_test, y_test = balanced_set(x_total,y_total,num_samples,num_classes,2);#Random seed 2 for test data
 
-x_train = transpose(x[1:nrow_test,1:13])
-x_test = transpose(x[nrow_test+1:nrow,1:13])
-y_train = y[1:nrow_test]
-y_test = y[nrow_test+1:nrow];
+#Get PCA Transform for x
+x = transpose(x_train)
+dims = 10
+x_pca = fit(PCA,x,maxoutdim=dims)
+xt = MultivariateStats.transform(x_pca,x)
+
+#Testing PCA Transform
+xz = MultivariateStats.transform(x_pca,transpose(x_test));
+
+#One-Hot Encode Y
+y = y_train
+yt = Flux.onehotbatch(y,[:1,:2,:3,:4,:5,:6,:7,:8,:9,:10]);
+#Test Set
+yz = y_test
+yzt = Flux.onehotbatch(yz,[:1,:2,:3,:4,:5,:6,:7,:8,:9,:10]);
