@@ -1,6 +1,6 @@
 current_dir = pwd()
-#app_dir = "/app"
-app_dir = "/home/jberez/Projects/MNIST/dockeropt/app"
+app_dir = "/app"
+#app_dir = "/home/jberez/Projects/MNIST/dockeropt/app"
 cd(app_dir)
 
 push!(LOAD_PATH, app_dir)
