@@ -13,29 +13,31 @@ function label_output(y)
     labels = [findmax(y[:,i])[2] for i=1:length(y[1,:])]
 end
 
-function find_best_trace(x,y,iters,plot_it=false)
-    obs_master = choicemap()::ChoiceMap
-    obs_master[:y] = y_train
-    obs = obs_master;
-    best_trace, scores, mses = likelihood_regression(x,y,iters)
-
-    if plot_it
-        PyPlot.scatter(mses, scores)
-        plt.title("Comparing Classifier Accuracy to Log Likelihood")
-        plt.xlabel("Classifier MSE")
-        plt.ylabel("Log Likelihood")
+function find_best_trace(x,y,iters,obs)
+    scores = []
+    single_traces = []
+    for i = 1:1000
+        (trace,) = generate(classifier, (x,), obs)
+        push!(scores,get_score(trace))
+        push!(single_traces,trace)
     end
-
-    pred_y = transpose(G(x_train,best_trace))[:,1]
-    best_mse = mse_scaled(pred_y, y_train)
-    variance = 1/(best_trace[:τᵧ])
-    println("Best noise variance: $variance")
-    println("Best MSE: $best_mse")
-    println("Best Score: $(get_score(best_trace))")
-    println("Best layer count: $(best_trace[:l])")
-    
+    best_trace = single_traces[findmax(scores)[2]];
     return best_trace
 end
+
+function write_output(chain)
+    filename_pre = "OPTtrace20b"
+    filename_end = "output.jld"
+    current_file = join([filename_pre,"$chain", filename_end])
+    serialize(current_file, traces[chain])
+end;
+
+function write_acceptance()
+    a_filename = "OPTAcceptanceA20b.jld"
+    w_filename = "OPTAcceptanceW20b.jld"
+    serialize(a_filename, a_acc)
+    serialize(w_filename, w_acc)
+end;
 
 function likelihood_regression(x,y,iters)
     obs = obs_master;
@@ -113,7 +115,7 @@ end
 
 #New Softmax
 function softmax_(arr::AbstractArray)
-    ex = mapslices(x -> exp.(0.1.*x),arr,dims=1)
+    ex = mapslices(x -> exp.(0.5*x),arr,dims=1) #0.5 for OptDigits
     rows, cols = size(arr)
     val = similar(ex)
     for i in 1:cols
@@ -123,5 +125,37 @@ function softmax_(arr::AbstractArray)
         end
     end
     return val
+end;
+
+#OptDigits Stuff
+function balanced_set(x,y,n,c,seed=0)
+    
+    if seed != 0
+        Random.seed!(seed)
+    end
+    
+    shuffled_indices = shuffle(1:length(y))
+    x = x[shuffled_indices,:]
+    y = y[shuffled_indices]
+    
+    x_ordered = zeros(Float64,n*c,64)
+    y_ordered = zeros(Int,n*c)
+    for k=1:c
+        labels = [i for i in 1:length(y) if y[i]==k]
+        x_ordered[k*n-(n-1):k*n,:] = x[labels,:][1:n,:]
+        y_ordered[k*n-(n-1):k*n] = y[labels][1:n]
+    end
+    return x_ordered, y_ordered
+end
+
+function reshape_x(x)
+    n = size(x)[1]
+    println(n)
+    x_reshaped = zeros(Float64, 8, 8, n)
+    for i=1:n
+        test = reshape(x[i,:], (1,8,8))
+        x_reshaped[:,:,i] = reshape(x[i,:], (8,8))
+    end
+    return x_reshaped
 end;
     

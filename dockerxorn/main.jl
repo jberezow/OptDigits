@@ -1,5 +1,6 @@
 current_dir = pwd()
 app_dir = "/app"
+#app_dir = "/home/jberez/Projects/OptDigits/dockerxorn/app"
 cd(app_dir)
 
 push!(LOAD_PATH, app_dir)
@@ -11,12 +12,13 @@ flush(stdout)
 using Gen
 using Distributions
 using LinearAlgebra
-using Flux
 using Random
 using Distances
-using JLD
-using Serialization
+using Flux
 using StatsBase
+using MultivariateStats
+using Serialization
+using JLD
 using BNN
 
 include("NUTS.jl")
@@ -37,31 +39,48 @@ println("Number of threads: $CHAINS")
 #---------------
 
 #NUTS hyperparameters
-Δ_max = 1000
+Δ_max = 1
 acc_prob = 0.65
-m=3
-m2=2
+m = 1
+m2 = 1
 
-#Network hyperparameters
-k_real = 4 #Number of hidden nodes per layer
-k_vector = [0.0 for i=1:k_real]
-k_vector[k_real] = 1.0
+#Select Network Goal
+network = "classifier"
 
-#Layer hyperparameters
-l_range = 8 #Maximum number of layers in the network
-l_list = [Int(i) for i in 1:l_range]
-l_real = 1;
+#Data hyperparameters
+c = 2
+n = 50 #Number of samples per mode (classifier)
+m = 4 #Number of modes (classifier)
+d = 2 #Input dimension
+N = n*m #Total samples
+σₐ = 0.1 #Mode variance (classifier)
+bound = 0.5
 
-#Hyperprior Hyperparameters
-αᵧ = 1 #Regression Noise Shape
-βᵧ = 1 #Regression Noise Scale/Rate
-α₁ = 1 #Input Weights, Biases Shape
-β₁ = 1 #Input Weights, Biases Scale/Rate
-α₂ = 1 #Hidden & Output Weights Shape
-β₂ = k_real; #Hidden & Output Weights Scale
+#Data
+x_raw, classes = real_data_classifier(Int(N/4), 4, bound, σₐ);
+classes = [(i+1) % 2 + 1 for i in classes]
+y = classes
+xt = transpose(x_raw)
+
+#One-Hot Encode Y
+yt = Flux.onehotbatch(y,[:1,:2]);
+
+#Test Set
+x_raw_test, classes_test = real_data_classifier(Int(N/4), 4, bound, σₐ);
+xt_test = transpose(x_raw_test)
+classes_test = [(i+1) % 2 + 1 for i in classes]
+y_test = classes_test
+yz = y_test
+yzt = Flux.onehotbatch(yz,[:1,:2]);
+
+#Node hyperparameters
+k_range = 16 #Maximum number of neurons per layer
+k_list = [Int(i) for i in 1:k_range]
 
 obs_master = choicemap()::ChoiceMap
-obs_master[:y] = y_train
+for i=1:length(y)
+    obs_master[(:y,i)] = y[i]
+end
 obs = obs_master;
 
 #-----------
@@ -76,9 +95,9 @@ a_acc = [[] for i=1:CHAINS]
 w_acc = [[] for i=1:CHAINS]
 
 for i=1:CHAINS
-    obs[:l] = ((i-1)%8 + 1)
-    #(new_start,) = generate(interpolator, (x_train,), obs)
-    new_start = find_best_trace(x_train,y_train,1000,obs)
+    obs[(:k,1)] = i
+    (new_start,) = generate(classifier, (xt,), obs)
+    #new_start = find_best_trace(xt,y,1000,obs)
     score = get_score(new_start)
     println("Chain $i starting score: $score")
     push!(traces[i],new_start)
@@ -117,5 +136,7 @@ try
         end
     end
 finally
-    write_output()
+    for i=1:CHAINS
+        write_output(i)
+    end
 end
