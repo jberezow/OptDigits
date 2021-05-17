@@ -10,22 +10,21 @@ println("Here we go...")
 flush(stdout)
 
 using Gen
-using Distributions
 using LinearAlgebra
 using Random
+using Distributions
 using Distances
 using Flux
-using StatsBase
+using JLD
 using MultivariateStats
 using Serialization
-using JLD
+using StatsBase
 using BNN
 
 include("NUTS.jl")
 include("RJNUTS.jl")
 include("utils.jl")
-include("proposals.jl")
-include("LoadData.jl");
+include("proposals.jl");
 
 println("Packages Loaded")
 flush(stdout)
@@ -74,7 +73,10 @@ yz = y_test
 yzt = Flux.onehotbatch(yz,[:1,:2]);
 
 #Node hyperparameters
+#################################################
 k_range = 16 #Maximum number of neurons per layer
+#################################################
+
 k_list = [Int(i) for i in 1:k_range]
 
 obs_master = choicemap()::ChoiceMap

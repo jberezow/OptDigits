@@ -7,6 +7,7 @@ metadata_packages = [
     "Distances",
     "Flux",
     "JLD",
+    "MultivariateStats",
     "Serialization",
     "StatsBase"]
 
@@ -27,6 +28,6 @@ using Distributions
 using Distances
 using Flux
 using JLD
+using MultivariateStats
 using Serialization
 using StatsBase
-

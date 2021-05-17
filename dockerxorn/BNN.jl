@@ -40,8 +40,11 @@ function G(x, trace)
     layers = trace[:l]
     ks = [trace[(:k,i)] for i=1:layers]
     
+    c = 2
+    d = length(x[:,1])
+    
     for i=1:layers
-        in_dim, out_dim = layer_unpacker(i, layers, ks)
+        in_dim, out_dim = layer_unpacker(i, layers, ks, d)
         W = reshape(trace[(:W,i)], out_dim, in_dim)
         b = reshape(trace[(:b,i)], trace[(:k,i)])
         nn = Dense(W, b, activation)
@@ -62,6 +65,9 @@ end;
 #-------------------
 @gen function classifier(x)
     
+    c = 2
+    d = length(x[:,1])
+    
     #Create a blank choicemap
     obs = choicemap()::ChoiceMap
     
@@ -69,6 +75,9 @@ end;
     l ~ categorical([1.0])
     l_real = l
     obs[:l] = l
+    
+    k_range = 16 #Maximum number of neurons per layer
+    k_list = [Int(i) for i in 1:k_range]
     
     #Create individual weight and bias vectors
     #Loop through hidden layers
