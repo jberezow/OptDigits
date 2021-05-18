@@ -2,4 +2,4 @@
 
 export JULIA_NUM_THREADS=16
 
-julia /app/main.jl >programXORN.log 
+julia /app/main.jl >programXOR.log 

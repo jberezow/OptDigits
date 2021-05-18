@@ -116,15 +116,15 @@ function data_labeller(y::Array{Float64})
 end
 
 function write_output(chain)
-    filename_pre = "XORNtrace"
+    filename_pre = "XORtrace"
     filename_end = "output.jld"
     current_file = join([filename_pre,"$chain", filename_end])
     serialize(current_file, traces[chain])
 end;
 
 function write_acceptance()
-    a_filename = "XORNAcceptanceA.jld"
-    w_filename = "XORNAcceptanceW.jld"
+    a_filename = "XORAcceptanceA.jld"
+    w_filename = "XORAcceptanceW.jld"
     serialize(a_filename, a_acc)
     serialize(w_filename, w_acc)
 end;

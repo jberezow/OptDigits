@@ -52,7 +52,7 @@ n = 50 #Number of samples per mode (classifier)
 m = 4 #Number of modes (classifier)
 d = 2 #Input dimension
 N = n*m #Total samples
-σₐ = 0.1 #Mode variance (classifier)
+σₐ = 0.015 #Mode variance (classifier)
 bound = 0.5
 
 #Data
