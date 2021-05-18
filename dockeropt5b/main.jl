@@ -43,7 +43,7 @@ num_samples = 50
 num_classes = 5
 
 #NUTS hyperparameters
-Δ_max = 100
+Δ_max = 10
 acc_prob = 0.65
 m = 3
 m2 = 3
@@ -105,6 +105,10 @@ obs = obs_master
 #Run Inference
 #--------------
 cd(current_dir)
+
+#Write Data
+write_data(xt,xz)
+
 println("Beginning Inference")
 println("-------------------")
 flush(stdout)

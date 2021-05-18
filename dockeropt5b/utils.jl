@@ -39,6 +39,13 @@ function write_acceptance()
     serialize(w_filename, w_acc)
 end;
 
+function write_data(train,test)
+    train_filename = "OPT_Train5b.jld"
+    test_filename = "OPT_Test5b.jld"
+    serialize(train_filename,train)
+    serialize(test_filename,test)
+end;
+
 function likelihood_regression(x,y,iters)
     obs = obs_master;
     scores = []
@@ -115,7 +122,7 @@ end
 
 #New Softmax
 function softmax_(arr::AbstractArray)
-    ex = mapslices(x -> exp.(0.5*x),arr,dims=1) #0.5 for OptDigits
+    ex = mapslices(x -> exp.(0.1*x),arr,dims=1) #0.5 for OptDigits c, 0.1 for b
     rows, cols = size(arr)
     val = similar(ex)
     for i in 1:cols

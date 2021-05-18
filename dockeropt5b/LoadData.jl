@@ -15,7 +15,7 @@ num_samples = 50
 num_classes = 5
 
 x_train, y_train = balanced_set(x_total,y_total,num_samples,num_classes,1);#Random seed 1 for train data
-x_test, y_test = balanced_set(x_total,y_total,num_samples,num_classes,2);#Random seed 2 for test data
+x_test, y_test = balanced_set(x_total,y_total,200,num_classes,300);#Random seed 2 for test data
 
 #Get PCA Transform for x
 x = transpose(x_train)
@@ -29,6 +29,7 @@ xt = MultivariateStats.transform(x_pca,x)
 
 #Testing PCA Transform
 xz = MultivariateStats.transform(x_pca,transpose(x_test));
+
 
 #One-Hot Encode Y
 y = y_train
