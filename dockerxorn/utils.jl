@@ -103,7 +103,7 @@ end;
 
 function plot_data_classifier(data,classes,alpha=1.0)
     markers = ["o","*"]
-    colors = ["blue","green"]
+    colors = ["blue","red"]
     for i=1:2
         mask = [classes[j] == i for j in 1:length(classes)]
         scatter(data[:,1][mask],data[:,2][mask],c=colors[i],alpha=alpha,marker=markers[i],zorder=3)
